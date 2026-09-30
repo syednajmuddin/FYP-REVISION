@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ur-PK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart Umpire Assistant — Revision</title>
+<style>
+:root{
+  --dk:#0B3D2E; --mid:#1B6B4A; --amber:#F2A516; --amberd:#B9780A;
+  --card:#F1F6F2; --tint:#E3F0E7; --text:#1F2A24; --muted:#5C6B62;
+  --white:#FFFFFF; --line:#D9E5DD; --bg:#F6FAF7;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --card:#153D2E; --tint:#123326; --text:#EAF3ED; --muted:#9FBFAC;
+    --white:#0F2A20; --line:#20493A; --bg:#0A1F17;
+  }
+}
+:root[data-theme="dark"]{
+  --card:#153D2E; --tint:#123326; --text:#EAF3ED; --muted:#9FBFAC;
+  --white:#0F2A20; --line:#20493A; --bg:#0A1F17;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Calibri,sans-serif;
+  min-height:100%;
+  padding-bottom:calc(90px + env(safe-area-inset-bottom,0px));
+}
+header{
+  background:linear-gradient(135deg,var(--dk),#0e5138);
+  color:#fff; padding:18px 18px 16px;
+  position:sticky; top:0; z-index:5;
+  padding-top:calc(18px + env(safe-area-inset-top,0px));
+  box-shadow:0 2px 10px rgba(0,0,0,.15);
+}
+header .eyebrow{font-size:11px; letter-spacing:2px; color:var(--amber); font-weight:700; text-transform:uppercase}
+header h1{margin:4px 0 2px; font-size:19px; line-height:1.25}
+header p{margin:0; font-size:12.5px; color:#bfe0cd}
+.progress-wrap{margin-top:12px; background:rgba(255,255,255,.15); border-radius:20px; height:7px; overflow:hidden}
+.progress-bar{height:100%; background:var(--amber); width:0%; transition:width .35s ease; border-radius:20px}
+.progress-label{font-size:11px; color:#bfe0cd; margin-top:5px; text-align:right}
+
+main{max-width:640px; margin:0 auto; padding:14px 14px 10px}
+
+.hero-quote{
+  background:#FDF1D6; border:1.5px solid var(--amber); border-radius:14px;
+  padding:14px 16px; margin:8px 0 18px; color:#3d2c05;
+}
+:root[data-theme="dark"] .hero-quote, @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .hero-quote{ background:#3a2c0c; color:#f4dfa0; border-color:var(--amber);} }
+.hero-quote .lbl{font-size:11px; font-weight:800; letter-spacing:1px; color:var(--amberd); margin-bottom:5px}
+.hero-quote .txt{font-size:15px; font-weight:700; font-style:italic; line-height:1.5}
+
+.tabbar{
+  display:flex; gap:6px; overflow-x:auto; padding:2px 0 14px; -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto; padding:8px 14px; border-radius:999px; background:var(--card);
+  color:var(--muted); font-size:12.5px; font-weight:700; white-space:nowrap; cursor:pointer;
+  border:1.5px solid transparent; user-select:none;
+}
+.tab.active{background:var(--dk); color:#fff; border-color:var(--dk)}
+
+section.panel{display:none; animation:fade .25s ease}
+section.panel.active{display:block}
+@keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)}}
+
+.card{
+  background:var(--card); border-radius:14px; padding:15px 16px; margin-bottom:12px;
+  border:1px solid var(--line);
+}
+.card h3{margin:0 0 8px; font-size:15px; color:var(--dk); display:flex; align-items:center; gap:8px}
+:root[data-theme="dark"] .card h3, @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .card h3{color:#7fd9ae}}
+.card h3 .ic{
+  width:26px; height:26px; border-radius:8px; background:var(--dk); color:var(--amber);
+  display:flex; align-items:center; justify-content:center; font-size:13px; flex:0 0 auto;
+}
+.card p, .card li{font-size:13.5px; line-height:1.55; color:var(--text); margin:0 0 6px}
+.card ul{margin:0; padding-inline-start:18px}
+.card .flow{
+  font-weight:700; color:var(--mid); font-size:13px; background:var(--white);
+  border-radius:10px; padding:10px 12px; border:1px dashed var(--line); margin-bottom:8px;
+  line-height:1.7;
+}
+.pill-row{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px}
+.pill{background:var(--white); border:1px solid var(--line); border-radius:999px; padding:4px 10px; font-size:11.5px; font-weight:700; color:var(--dk)}
+:root[data-theme="dark"] .pill, @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pill{color:#7fd9ae}}
+
+.fr-table{width:100%; border-collapse:collapse; font-size:12.5px}
+.fr-table th{background:var(--dk); color:#fff; text-align:left; padding:8px 9px; font-size:11px}
+.fr-table th:first-child{border-radius:8px 0 0 0}
+.fr-table th:last-child{border-radius:0 8px 0 0}
+.fr-table td{padding:8px 9px; border-bottom:1px solid var(--line); vertical-align:top}
+.fr-table tr:nth-child(even) td{background:var(--white)}
+.fr-table .mod{font-weight:800; color:var(--dk)}
+:root[data-theme="dark"] .fr-table .mod, @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .fr-table .mod{color:#7fd9ae}}
+.fr-table .core{color:var(--amberd); font-weight:800}
+
+.role-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.role{background:var(--white); border:1px solid var(--line); border-radius:12px; padding:12px; text-align:center}
+.role .em{font-size:22px; display:block; margin-bottom:4px}
+.role b{font-size:13px; color:var(--dk); display:block}
+:root[data-theme="dark"] .role b, @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .role b{color:#7fd9ae}}
+.role span{font-size:11px; color:var(--muted)}
+
+.qa{background:var(--white); border-radius:12px; margin-bottom:8px; border:1px solid var(--line); overflow:hidden}
+.qa summary{list-style:none; cursor:pointer; padding:12px 14px; font-weight:700; font-size:13.5px; color:var(--dk); display:flex; justify-content:space-between; align-items:center; gap:8px}
+:root[data-theme="dark"] .qa summary, @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .qa summary{color:#7fd9ae}}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary .chev{transition:transform .2s ease; color:var(--amberd); font-size:12px}
+.qa[open] summary .chev{transform:rotate(90deg)}
+.qa .a{padding:0 14px 13px; font-size:13px; color:var(--text); line-height:1.55}
+
+.quiz-card{background:var(--card); border-radius:14px; padding:16px; border:1px solid var(--line)}
+.quiz-q{font-size:14.5px; font-weight:700; color:var(--dk); margin-bottom:12px; line-height:1.5}
+:root[data-theme="dark"] .quiz-q, @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .quiz-q{color:#eaf3ed}}
+.quiz-opt{
+  display:block; width:100%; text-align:left; background:var(--white); border:1.5px solid var(--line);
+  border-radius:10px; padding:11px 13px; margin-bottom:8px; font-size:13.5px; color:var(--text);
+  cursor:pointer; font-family:inherit;
+}
+.quiz-opt.correct{background:#dff2e6; border-color:var(--mid); color:#0b3d2e; font-weight:700}
+.quiz-opt.wrong{background:#fbe3e0; border-color:#c0453a; color:#7a231c}
+.quiz-opt:disabled{cursor:default}
+.quiz-explain{margin-top:10px; font-size:12.5px; background:var(--white); border-radius:10px; padding:10px 12px; color:var(--muted); display:none}
+.quiz-explain.show{display:block}
+.quiz-nav{display:flex; justify-content:space-between; align-items:center; margin-top:14px}
+.quiz-nav button{
+  background:var(--dk); color:#fff; border:none; border-radius:999px; padding:9px 18px;
+  font-weight:700; font-size:13px; cursor:pointer;
+}
+.quiz-nav button:disabled{opacity:.35}
+.quiz-score{font-size:12.5px; color:var(--muted); font-weight:700}
+
+.footer-nav{
+  position:fixed; bottom:0; left:0; right:0; background:var(--dk); z-index:6;
+  display:flex; padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));
+  box-shadow:0 -2px 12px rgba(0,0,0,.2);
+}
+.fn-btn{
+  flex:1; background:none; border:none; color:#bfe0cd; font-size:10.5px; font-weight:700;
+  display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 2px; cursor:pointer;
+}
+.fn-btn .em{font-size:18px}
+.fn-btn.active{color:var(--amber)}
+
+.reset-row{text-align:center; margin:10px 0 4px}
+.reset-row button{background:none; border:1px solid var(--line); color:var(--muted); border-radius:999px; padding:6px 14px; font-size:11.5px; cursor:pointer}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">FYP REVISION</div>
+  <h1>Smart Umpire Assistance System</h1>
+  <p>SRS v1.0 · Syed Najmuddin, Abdul Khaliq, Sawood Khan</p>
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="progress-label" id="progressLabel">0% revised</div>
+</header>
+
+<main>
+
+  <div class="tabbar" id="tabbar">
+    <div class="tab active" data-tab="overview">Overview</div>
+    <div class="tab" data-tab="modules">10 Modules</div>
+    <div class="tab" data-tab="roles">Roles</div>
+    <div class="tab" data-tab="flows">Flows</div>
+    <div class="tab" data-tab="qa">Q&amp;A</div>
+    <div class="tab" data-tab="quiz">Quiz</div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <section class="panel active" id="panel-overview">
+    <div class="hero-quote">
+      <div class="lbl">SABSE IMPORTANT LINE</div>
+      <div class="txt">"System umpire ko assist karta hai, replace nahi karta. Video evidence deta hai, lekin final decision hamesha insaan (umpire) ka hota hai."</div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ic">1</span> Project kya hai</h3>
+      <ul>
+        <li>Tape-ball cricket ke umpires ki madad ke liye mobile app.</li>
+        <li>4 problems solve karta hai: umpiring disputes, manual scoring errors, video evidence ki kami, digital records na hona.</li>
+        <li><b>Version 1 mein koi AI / Snicko / Hawk-Eye / Ultra Edge nahi</b> — koi automatic decision nahi, sirf assistance.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3><span class="ic">2</span> Architecture</h3>
+      <div class="flow">Mobile App (Flutter/Dart) → Local Database (SQLite) → Firebase Backend (Auth + Firestore) → Cloud Storage</div>
+      <ul>
+        <li>Offline-first: ground par internet na ho tab bhi scoring chalti rehti hai.</li>
+        <li>Internet wapas aaye to data automatically cloud se sync ho jata hai.</li>
+      </ul>
+      <div class="pill-row">
+        <span class="pill">Flutter</span><span class="pill">Dart</span><span class="pill">Firebase Auth</span>
+        <span class="pill">Firestore</span><span class="pill">SQLite</span><span class="pill">Camera API</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ic">3</span> Data model — 9 entities</h3>
+      <p>User, Tournament, <b>Match (center/hub)</b>, Team, Player, Innings, Ball Event, Video, Review, Statistics.</p>
+      <p style="color:var(--muted); font-style:italic;">Har Ball Event aur Video ek unique Match ID se linked hota hai (BR5, BR6, BR9).</p>
+    </div>
+
+    <div class="card">
+      <h3><span class="ic">4</span> Non-functional points</h3>
+      <ul>
+        <li><b>Performance:</b> score turant update, offline mein bhi local data accessible.</li>
+        <li><b>Safety:</b> camera permission, storage warning, undo/correction facility.</li>
+        <li><b>Security:</b> role-based access, secure login, protected videos.</li>
+        <li><b>Constraint:</b> system kabhi guarantee nahi deta ke decision "sahi" hai — responsibility umpire ki hai.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- MODULES -->
+  <section class="panel" id="panel-modules">
+    <div class="card">
+      <h3><span class="ic">FR</span> 10 Feature Modules — 72 requirements</h3>
+      <table class="fr-table">
+        <tr><th>#</th><th>Module</th><th>Kya karta hai</th></tr>
+        <tr><td class="mod">FR1</td><td>Login / Roles</td><td>Login, register, role-based access</td></tr>
+        <tr><td class="mod">FR2</td><td>Tournament/Match</td><td>Match banana, umpire/scorer assign</td></tr>
+        <tr><td class="mod">FR3</td><td>Team/Player</td><td>Teams aur players add/edit</td></tr>
+        <tr><td class="mod core">FR4</td><td class="core">Live Scoring (CORE)</td><td>Runs, wicket, wide, no-ball — auto score update</td></tr>
+        <tr><td class="mod">FR5</td><td>Video Recording</td><td>Record start/stop, match se link</td></tr>
+        <tr><td class="mod">FR6</td><td>Review</td><td>Playback, slow motion, timeline</td></tr>
+        <tr><td class="mod">FR7</td><td>Umpire Decision</td><td>Umpire final call — system khud decide NAHI karta</td></tr>
+        <tr><td class="mod">FR8</td><td>Stats/Scorecard</td><td>Auto calculation, digital scorecard</td></tr>
+        <tr><td class="mod">FR9</td><td>History</td><td>Purane matches, scorecards search</td></tr>
+        <tr><td class="mod">FR10</td><td>Administration</td><td>Admin users/roles/data manage karta hai</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3><span class="ic">⚖</span> Business Rules (BR1–BR10) — top 4</h3>
+      <ul>
+        <li>Sirf authorized users matches/scoring manage kar sakte hain.</li>
+        <li>Umpire ki har decision par final authority hai.</li>
+        <li>Review video kabhi automatically decision change nahi karta.</li>
+        <li>Har match ka unique ID hota hai; completed match edit se protected hai.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ROLES -->
+  <section class="panel" id="panel-roles">
+    <div class="card">
+      <h3><span class="ic">👥</span> 4 User Roles</h3>
+      <div class="role-grid">
+        <div class="role"><span class="em">🛡️</span><b>Admin</b><span>Tournament/match/teams manage karta hai</span></div>
+        <div class="role"><span class="em">⚖️</span><b>Umpire</b><span>Video review karke final decision deta hai</span></div>
+        <div class="role"><span class="em">📋</span><b>Scorer</b><span>Ball-by-ball score enter karta hai</span></div>
+        <div class="role"><span class="em">👁️</span><b>Viewer</b><span>Sirf live score/stats dekhta hai</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="ic">🖥️</span> 8 Main Screens</h3>
+      <p>Splash → Login → Dashboard → Create Match → Live Scoring → Video Recording → Review → Scorecard.</p>
+    </div>
+    <div class="card">
+      <h3><span class="ic">🧩</span> Version 1 vs Future</h3>
+      <p><b>In Version 1:</b> login, scoring, video, review, stats, history, offline sync.</p>
+      <p><b>Future enhancements:</b> automatic AI umpiring, ball tracking, Snicko/UltraEdge, Hawk-Eye, auto LBW/catch detection, multi-camera broadcasting.</p>
+    </div>
+  </section>
+
+  <!-- FLOWS -->
+  <section class="panel" id="panel-flows">
+    <div class="card">
+      <h3><span class="ic">1</span> Live Scoring Flow</h3>
+      <div class="flow">Ball delivered → Enter result → Update score → Save ball event → Next ball</div>
+      <p>Undo/correction facility hai (FR-4.11); har ball event store hota hai (FR-4.12).</p>
+    </div>
+    <div class="card">
+      <h3><span class="ic">2</span> Review Workflow (disputes ka jawab)</h3>
+      <div class="flow">Disputed incident → Open review → Select video → Play → Slow motion → Umpire reviews → Decision save</div>
+      <p><b>Video sirf EVIDENCE hai, VERDICT nahi</b> — umpire ki final authority hai (BR3, BR4).</p>
+    </div>
+    <div class="card">
+      <h3><span class="ic">3</span> Match Setup Flow</h3>
+      <div class="flow">Login → Create match → Select teams → Add players → Assign umpire/scorer → Save → Start match → Live scoring</div>
+    </div>
+    <div class="card">
+      <h3><span class="ic">4</span> Data Flow (simplified)</h3>
+      <p>User → Authentication → Match Management → (Live Scoring / Video Mgmt / Review Mgmt) → Statistics → Scorecard.</p>
+      <p style="color:var(--muted); font-style:italic;">Scoring, video aur decisions sab match se link rehte hain.</p>
+    </div>
+  </section>
+
+  <!-- Q&A -->
+  <section class="panel" id="panel-qa">
+    <details class="qa" open>
+      <summary>Q: AI kyun use nahi kiya? <span class="chev">▶</span></summary>
+      <div class="a">A: Version 1 ka scope jaan-bujh kar simple rakha gaya hai. AI, Snicko, Hawk-Eye jaisi cheezein future enhancement ke liye chhodi gayi hain — abhi ka focus reliable scoring aur video-assisted review hai.</div>
+    </details>
+    <details class="qa">
+      <summary>Q: Internet na ho to kya hoga? <span class="chev">▶</span></summary>
+      <div class="a">A: Local SQLite database sab kuch offline store karta hai — scoring, match data. Jab internet wapas aata hai, sab kuch automatically Firebase cloud se sync ho jata hai (BR10).</div>
+    </details>
+    <details class="qa">
+      <summary>Q: Scoring mein mistake ho jaye to? <span class="chev">▶</span></summary>
+      <div class="a">A: Undo/correction facility hai (FR-4.11). Har correction record hoti hai (BR8), taake original ball event ka trace bhi maujood rahe.</div>
+    </details>
+    <details class="qa">
+      <summary>Q: Data security kaise ensure hoti hai? <span class="chev">▶</span></summary>
+      <div class="a">A: Role-based access control, HTTPS communication, protected credentials aur secure user sessions. Har role sirf apne functions tak access rakhta hai.</div>
+    </details>
+    <details class="qa">
+      <summary>Q: System khud decide kyun nahi karta ke out hai ya nahi? <span class="chev">▶</span></summary>
+      <div class="a">A: Ye project ka core principle hai (Chapter 1, FR7, Business Rule BR3/BR4) — system sirf video evidence aur slow-motion replay deta hai, final decision hamesha human umpire ka hota hai. Isse trust aur accountability barqarar rehti hai.</div>
+    </details>
+    <details class="qa">
+      <summary>Q: Video recording ki privacy kaise handle hoti hai? <span class="chev">▶</span></summary>
+      <div class="a">A: SRS section 5.5 ke mutabiq — players/officials ki privacy respect ki jati hai, zaroorat parne par consent li jati hai, aur app clearly batati hai ke video sirf review/assistance tool hai.</div>
+    </details>
+    <details class="qa">
+      <summary>Q: Future mein kya add ho sakta hai? <span class="chev">▶</span></summary>
+      <div class="a">A: Automatic AI umpiring, ball tracking, Snicko/UltraEdge, Hawk-Eye analysis, automatic LBW/catch detection, aur professional multi-camera broadcasting — ye sab SRS mein future enhancements ke taur par likhe hain, is version ka commitment nahi.</div>
+    </details>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="panel" id="panel-quiz">
+    <div class="quiz-card">
+      <div class="quiz-score" id="quizProgress">Question 1 of 8</div>
+      <div class="quiz-q" id="quizQ" style="margin-top:8px;"></div>
+      <div id="quizOpts"></div>
+      <div class="quiz-explain" id="quizExplain"></div>
+      <div class="quiz-nav">
+        <span class="quiz-score" id="quizScore">Score: 0/0</span>
+        <button id="quizNextBtn" disabled>Next</button>
+      </div>
+    </div>
+    <div class="reset-row"><button onclick="restartQuiz()">Restart quiz</button></div>
+  </section>
+
+</main>
+
+<div class="footer-nav">
+  <button class="fn-btn active" data-tab="overview"><span class="em">📖</span>Overview</button>
+  <button class="fn-btn" data-tab="modules"><span class="em">🧩</span>Modules</button>
+  <button class="fn-btn" data-tab="roles"><span class="em">👥</span>Roles</button>
+  <button class="fn-btn" data-tab="flows"><span class="em">🔄</span>Flows</button>
+  <button class="fn-btn" data-tab="qa"><span class="em">💬</span>Q&amp;A</button>
+  <button class="fn-btn" data-tab="quiz"><span class="em">📝</span>Quiz</button>
+</div>
+
+<script>
+// ---- Tab switching ----
+const tabs = document.querySelectorAll('.tab, .fn-btn');
+const panels = document.querySelectorAll('.panel');
+let visited = new Set(['overview']);
+
+function updateProgress(){
+  const pct = Math.round((visited.size/6)*100);
+  document.getElementById('progressBar').style.width = pct+'%';
+  document.getElementById('progressLabel').textContent = pct+'% revised';
+}
+
+function goTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.fn-btn').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  panels.forEach(p=>p.classList.toggle('active', p.id==='panel-'+name));
+  visited.add(name);
+  updateProgress();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+tabs.forEach(t=>t.addEventListener('click', ()=>goTab(t.dataset.tab)));
+updateProgress();
+
+// ---- Quiz ----
+const QUESTIONS = [
+  {
+    q: "System AI/Snicko/Hawk-Eye use karke khud decide karta hai ke batsman out hai ya nahi?",
+    opts: ["Haan, Version 1 mein AI decide karta hai", "Nahi, sirf umpire final decision deta hai", "Sirf catch ke liye AI use hota hai"],
+    correct: 1,
+    explain: "System sirf video evidence aur slow-motion replay deta hai. Final decision hamesha human umpire ka hota hai (BR3, BR4, FR7)."
+  },
+  {
+    q: "App ka data architecture kya hai?",
+    opts: ["Sirf cloud database, offline kaam nahi karta", "Mobile App → SQLite (local) → Firebase → Cloud Storage", "Sirf local storage, kabhi sync nahi hota"],
+    correct: 1,
+    explain: "Offline-first design: local SQLite se scoring chalti hai, internet aane par Firebase cloud se sync hoti hai."
+  },
+  {
+    q: "In char roles mein se kon video review karke final decision record karta hai?",
+    opts: ["Scorer", "Viewer", "Umpire"],
+    correct: 2,
+    explain: "Umpire hi review module use karke incident dekhta hai aur final decision record karta hai (FR6, FR7)."
+  },
+  {
+    q: "FR4 (Live Scoring) ko SRS mein kya kaha gaya hai?",
+    opts: ["Optional feature", "System ka core/sabse bada component", "Sirf admin ke liye"],
+    correct: 1,
+    explain: "SRS mein likha hai: 'The scoring module is one of the core components of the system' — 12 functional requirements ke saath sabse bada module hai."
+  },
+  {
+    q: "Agar scorer se ball entry mein ghalti ho jaye to system kya deta hai?",
+    opts: ["Koi option nahi, dobara match shuru karna padega", "Undo/correction facility, aur correction record hoti hai", "Sirf admin theek kar sakta hai"],
+    correct: 1,
+    explain: "FR-4.11 undo/correction deta hai, aur Business Rule BR8 ke mutabiq corrections record ki jati hain."
+  },
+  {
+    q: "Version 1 mein in mein se kya SHAMIL NAHI hai?",
+    opts: ["Live ball-by-ball scoring", "Automatic AI umpiring / Hawk-Eye", "Video recording aur slow motion replay"],
+    correct: 1,
+    explain: "Automatic AI umpiring, Hawk-Eye, Snicko/UltraEdge, auto LBW/catch detection — ye sab future enhancements hain, Version 1 mein nahi."
+  },
+  {
+    q: "Har Ball Event aur Video kis se linked hota hai?",
+    opts: ["Player ID se", "Ek unique Match ID se", "Tournament name se"],
+    correct: 1,
+    explain: "Business Rules BR5, BR6, BR9 ke mutabiq, har match ka unique ID hota hai aur ball events/videos usi se linked hote hain."
+  },
+  {
+    q: "App kis technology stack mein banai ja rahi hai?",
+    opts: ["Flutter, Dart, Firebase, SQLite", "React Native, MongoDB", "Native Android Java, MySQL"],
+    correct: 0,
+    explain: "SRS Chapter 2 ke mutabiq: Flutter (mobile framework), Dart (language), Firebase (backend/cloud), SQLite (offline database)."
+  }
+];
+
+let qIdx = 0, score = 0, answered = false;
+
+function renderQuiz(){
+  const q = QUESTIONS[qIdx];
+  document.getElementById('quizProgress').textContent = `Question ${qIdx+1} of ${QUESTIONS.length}`;
+  document.getElementById('quizQ').textContent = q.q;
+  document.getElementById('quizScore').textContent = `Score: ${score}/${qIdx}`;
+  const optsDiv = document.getElementById('quizOpts');
+  optsDiv.innerHTML = '';
+  answered = false;
+  document.getElementById('quizExplain').classList.remove('show');
+  document.getElementById('quizExplain').textContent = '';
+  const nextBtn = document.getElementById('quizNextBtn');
+  nextBtn.disabled = true;
+  nextBtn.textContent = qIdx === QUESTIONS.length-1 ? 'Finish' : 'Next';
+
+  q.opts.forEach((opt, i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'quiz-opt';
+    btn.textContent = opt;
+    btn.addEventListener('click', ()=>{
+      if(answered) return;
+      answered = true;
+      const allBtns = optsDiv.querySelectorAll('.quiz-opt');
+      allBtns.forEach(b=>b.disabled=true);
+      if(i === q.correct){
+        btn.classList.add('correct');
+        score++;
+      } else {
+        btn.classList.add('wrong');
+        allBtns[q.correct].classList.add('correct');
+      }
+      const ex = document.getElementById('quizExplain');
+      ex.textContent = q.explain;
+      ex.classList.add('show');
+      nextBtn.disabled = false;
+      document.getElementById('quizScore').textContent = `Score: ${score}/${qIdx+1}`;
+    });
+    optsDiv.appendChild(btn);
+  });
+}
+
+document.getElementById('quizNextBtn').addEventListener('click', ()=>{
+  if(qIdx < QUESTIONS.length-1){
+    qIdx++;
+    renderQuiz();
+  } else {
+    document.getElementById('quizQ').textContent = `Quiz complete! Final score: ${score}/${QUESTIONS.length}`;
+    document.getElementById('quizOpts').innerHTML = '';
+    document.getElementById('quizExplain').classList.remove('show');
+    document.getElementById('quizNextBtn').disabled = true;
+    document.getElementById('quizProgress').textContent = 'Done';
+  }
+});
+
+function restartQuiz(){
+  qIdx = 0; score = 0;
+  renderQuiz();
+}
+renderQuiz();
+</script>
+
+</body>
+</html>
